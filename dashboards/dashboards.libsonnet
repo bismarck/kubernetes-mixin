@@ -1,3 +1,4 @@
+(import 'deployment.libsonnet') +
 (import 'node.libsonnet') +
 (import 'pods.libsonnet') +
 (import 'resources.libsonnet') +
