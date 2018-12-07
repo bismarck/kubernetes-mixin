@@ -17,14 +17,13 @@ local numbersinglestat = promgrafonnet.numbersinglestat;
           'Memory Usage',
           datasource='$datasource',
           min=0,
+          span=12,
           format='bytes',
           legend_rightSide=true,
           legend_alignAsTable=true,
-          legend_current=true,
-          legend_avg=true,
         )
         .addTarget(prometheus.target(
-          'sum by(container_name) (container_memory_usage_bytes{%(cadvisorSelector)s, namespace="$namespace", pod_name="$pod", container_name=~"$container", container_name!="POD"})' % $._config,
+          'sum by(container_name) (container_memory_working_set_bytes{%(cadvisorSelector)s, namespace="$namespace", pod_name="$pod", container_name=~"$container", container_name!="POD"})' % $._config,
           legendFormat='Current: {{ container_name }}',
         ))
         .addTarget(prometheus.target(
@@ -43,32 +42,42 @@ local numbersinglestat = promgrafonnet.numbersinglestat;
           'CPU Usage',
           datasource='$datasource',
           min=0,
+          span=12,
           legend_rightSide=true,
           legend_alignAsTable=true,
-          legend_current=true,
-          legend_avg=true,
         )
         .addTarget(prometheus.target(
-          'sum by (container_name) (rate(container_cpu_usage_seconds_total{%(cadvisorSelector)s, image!="",container_name!="POD",pod_name="$pod"}[1m]))' % $._config,
-          legendFormat='{{ container_name }}',
+          'sum by (container_name) (rate(container_cpu_usage_seconds_total{%(cadvisorSelector)s, image!="",container_name!="POD", container_name=~"$container", pod_name="$pod"}[1m]))' % $._config,
+          legendFormat='Current: {{ container_name }}',
+        ))
+        .addTarget(prometheus.target(
+          'sum by(container) (kube_pod_container_resource_requests_cpu_cores{%(kubeStateMetricsSelector)s, namespace="$namespace", pod="$pod", container=~"$container"})' % $._config,
+          legendFormat='Requested: {{ container }}',
+        ))
+        .addTarget(prometheus.target(
+          'sum by(container) (kube_pod_container_resource_limits_cpu_cores{%(kubeStateMetricsSelector)s, namespace="$namespace", pod="$pod", container=~"$container"})' % $._config,
+          legendFormat='Limit: {{ container }}',
         ))
       );
 
       local networkRow = row.new()
                          .addPanel(
         graphPanel.new(
-          'Network I/O',
+          'Network I/O (by pod)',
           datasource='$datasource',
-          format='bytes',
+          format='Bps',
           min=0,
+          span=12,
           legend_rightSide=true,
           legend_alignAsTable=true,
-          legend_current=true,
-          legend_avg=true,
         )
         .addTarget(prometheus.target(
           'sort_desc(sum by (pod_name) (rate(container_network_receive_bytes_total{%(cadvisorSelector)s, pod_name="$pod"}[1m])))' % $._config,
-          legendFormat='{{ pod_name }}',
+          legendFormat='Received',
+        ))
+        .addTarget(prometheus.target(
+          'sort_desc(sum by (pod_name) (rate(container_network_transmit_bytes_total{%(cadvisorSelector)s, pod_name="$pod"}[1m])))' % $._config,
+          legendFormat='Transmitted',
         ))
       );
 
